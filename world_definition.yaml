@@ -1,0 +1,194 @@
+# ==========================================
+# WorldShell: Asymmetric Stealth Game Definition
+# ==========================================
+
+# ------------------------------------------
+# 1. Ontology (Object Types & Properties)
+# 定义物体的基本性质，决定了它们能如何交互
+# ------------------------------------------
+object_types:
+  - name: Container
+    properties:
+      can_open: true
+      can_contain_items: true
+      can_lock: true  # 容器可以上锁
+      is_opaque: true # 必须打开才能看到里面
+      search_difficulty: 1 # AP cost to search
+
+  - name: Safe  # 类型标识符必须是英文
+    inherits: Container
+    properties:
+      can_lock: true
+      lock_difficulty: 5 # 撬锁难度/噪音等级
+      material: metal
+
+  - name: Door
+    properties:
+      can_open: true
+      can_lock: true
+      blocks_sight: true # 关上时阻挡视线
+      blocks_sound: partial # 部分阻挡声音
+
+  - name: KeyItem
+    properties:
+      portable: true
+      size: small # 可以藏在口袋里
+      is_objective: true
+
+  - name: Tool
+    properties:
+      portable: true
+      size: medium
+
+# ------------------------------------------
+# 2. Map Topology (The Apartment)
+# 简单的两室一厅一卫结构
+# ------------------------------------------
+rooms:
+  living_room:
+    name: "客厅"
+    description: "宽敞的区域，有一张沙发和一台大电视。"
+    connections:
+      bedroom_h: bedroom_h
+      bedroom_z: bedroom_z
+      bathroom: bathroom
+      exit_door: exit_door  # 胜利出口
+
+  bedroom_h:
+    name: "H的卧室"
+    description: "整洁的房间，有一张单人床和一个上锁的保险箱。"
+    connections:
+      living_room: living_room
+
+  bedroom_z:
+    name: "Z的卧室"
+    description: "凌乱的房间，地板上散落着衣服。"
+    connections:
+      living_room: living_room
+
+  bathroom:
+    name: "浴室"
+    description: "白色瓷砖地板。换气扇嗡嗡作响。"
+    connections:
+      living_room: living_room
+      
+  exit_door:
+    name: "出口"
+    description: "通往外界的门。"
+    connections: {}
+
+# ------------------------------------------
+# 3. Entities (Initial State)
+# 具体的物品及其初始位置和状态
+# ------------------------------------------
+entities:
+  # --- Living Room ---
+  - id: tv_cabinet
+    name: "电视柜"
+    type: Container
+    location: living_room
+    state: { is_open: false, contains: [] }
+
+  - id: sofa
+    name: "沙发"
+    type: Container
+    location: living_room
+    state: { is_open: true, contains: [] }
+
+  # --- H's Bedroom (Target Area) ---
+  - id: safe_01
+    name: "保险箱"
+    type: Safe
+    location: bedroom_h
+    state: 
+      is_open: false 
+      is_locked: true 
+      key_id: "key_h"
+      contains: []  # 空列表，物品通过location自动加入
+
+  - id: door_h
+    name: "H的房门"
+    type: Door
+    location: living_room
+    link: [living_room, bedroom_h]
+    state: { is_open: false, is_locked: true }
+
+  # --- Z's Bedroom ---
+  - id: suitcase
+    name: "手提箱"
+    type: Container
+    location: bedroom_z
+    state: 
+      is_open: false
+      is_locked: true
+      key_id: "key_z"
+      contains: []  # 空列表，物品通过location自动加入
+
+  # --- Bathroom ---
+  - id: mirror_cabinet
+    name: "镜柜"
+    type: Container
+    location: bathroom
+    state: { is_open: false, contains: [] }  # 空列表
+
+  # --- Items ---
+  - id: diary_book
+    name: "日记本"
+    type: KeyItem
+    location: safe_01  # 在保险箱中
+
+  - id: lockpick
+    name: "撬锁器"
+    type: Tool
+    location: suitcase  # 在手提箱中
+
+  - id: sleeping_pills
+    name: "安眠药"
+    type: Tool
+    location: mirror_cabinet  # 在镜柜中
+  
+  - id: key_z
+    name: "手提箱的钥匙"
+    type: KeyItem
+    location: bedroom_z  # Z一开始就在这里，初始化时会自动拿走
+
+# ------------------------------------------
+# 4. Trace Rules (The "Cat Box" Logic)
+# 核心机制：动作 -> 产生的痕迹 -> 观测要求
+# ------------------------------------------
+trace_rules:
+  # 撬锁痕迹
+  - action: pick_lock
+    target_type: Safe
+    noise_level: 5 # 产生噪音，可能惊醒H
+    trace:
+      id: "scratch_marks"
+      description: "锁芯上有新鲜的划痕。"
+      visibility: examine # 必须仔细检查(examine)才能看到，普通look看不到
+
+  # 移动物品痕迹
+  - action: take
+    target_type: KeyItem
+    noise_level: 1
+    trace:
+      id: "dust_outline"
+      description: "表面上的矩形灰尘轮廓表明这里曾经有东西。"
+      visibility: examine
+      duration: permanent # 永久痕迹（除非被打扫）
+
+  # 走路痕迹 (如果是湿脚)
+  - action: move
+    condition: "actor.status == wet"
+    trace:
+      id: "wet_footprints"
+      description: "从{origin}到{dest}的湿脚印。"
+      visibility: look # 显眼，一看就能看到
+      duration: 5_turns # 5回合后干掉消失
+
+  # 隐藏物品
+  - action: hide
+    target_type: KeyItem
+    trace:
+      id: "slightly_moved"
+      description: "{container}看起来稍微错位了。"
+      visibility: examine

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WorldShell - 守夜人与窃贼</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- 角色选择界面 -->
+    <div id="role-selection" class="screen active">
+        <div class="container">
+            <h1>WorldShell</h1>
+            <h2>守夜人与窃贼</h2>
+            <p class="subtitle">选择你的角色</p>
+            
+            <div class="game-mode-selector">
+                <label class="mode-option">
+                    <input type="radio" name="game_mode" value="pvp" checked>
+                    <span>双人对战（需要两个玩家）</span>
+                </label>
+                <label class="mode-option">
+                    <input type="radio" name="game_mode" value="ai">
+                    <span>🤖 与AI对战（单人游戏）</span>
+                </label>
+            </div>
+            
+            <div class="role-cards">
+                <div class="role-card" onclick="selectRole('H')">
+                    <h3>🏠 H - 守夜人</h3>
+                    <p><strong>目标:</strong> 守护日记本直到天亮（20回合）</p>
+                    <p><strong>优势:</strong> 知道物品位置，可以布置陷阱</p>
+                    <button class="btn btn-primary">选择 H</button>
+                </div>
+                
+                <div class="role-card" onclick="selectRole('Z')">
+                    <h3>🥷 Z - 入侵者</h3>
+                    <p><strong>目标:</strong> 找到日记本并逃离公寓</p>
+                    <p><strong>优势:</strong> 夜间行动，潜行能力强</p>
+                    <button class="btn btn-primary">选择 Z</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 游戏主界面 -->
+    <div id="game-screen" class="screen">
+        <div class="game-container">
+            <!-- 左侧面板：状态 -->
+            <div class="panel panel-status">
+                <h3>状态面板</h3>
+                <div id="player-status" class="status-content">
+                    <p><strong>角色:</strong> <span id="player-role">-</span></p>
+                    <p><strong>回合:</strong> <span id="turn-count">0</span></p>
+                    <p><strong>当前玩家:</strong> <span id="current-turn">-</span></p>
+                    <p><strong>位置:</strong> <span id="player-location">-</span></p>
+                    <p><strong>AP:</strong> <span id="player-ap">0</span>/<span id="player-max-ap">10</span></p>
+                    <p><strong>状态:</strong> <span id="player-state">-</span></p>
+                    <div class="inventory">
+                        <strong>背包:</strong>
+                        <div id="inventory-list">空</div>
+                    </div>
+                </div>
+                
+                <div class="turn-indicator" id="turn-indicator">
+                    等待连接...
+                </div>
+            </div>
+
+            <!-- 中间面板：房间视图 -->
+            <div class="panel panel-main">
+                <h3>房间视图</h3>
+                <div id="room-view" class="room-content">
+                    <p>等待游戏开始...</p>
+                </div>
+                
+                <h3>动作历史</h3>
+                <div id="action-history" class="history-content">
+                    <p class="history-item">游戏开始</p>
+                </div>
+            </div>
+
+            <!-- 右侧面板：动作 -->
+            <div class="panel panel-actions">
+                <h3>可用动作</h3>
+                <div id="actions-list" class="actions-content">
+                    <p>等待你的回合...</p>
+                </div>
+                
+                <button id="end-turn-btn" class="btn btn-end-turn" onclick="endTurn()" disabled>
+                    结束回合
+                </button>
+                
+                <button class="btn btn-restart" onclick="restartGame()">
+                    🔄 重新开始
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 游戏结束界面 -->
+    <div id="game-over-screen" class="screen">
+        <div class="container">
+            <h1>游戏结束</h1>
+            <p id="game-over-message" class="game-over-text"></p>
+            <button class="btn btn-primary" onclick="location.reload()">重新开始</button>
+        </div>
+    </div>
+
+    <script src="/static/game.js"></script>
+</body>
+</html>
